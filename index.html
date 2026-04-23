@@ -414,7 +414,6 @@
     <div class="sidebar-item" onclick="setFilter('category','deportivo')" data-cat="deportivo">🏃 Deportivos <span class="sidebar-count" id="cnt-deportivo">0</span></div>
     <div class="sidebar-item" onclick="setFilter('category','despertador')" data-cat="despertador">⏰ Despertadores <span class="sidebar-count" id="cnt-despertador">0</span></div>
     <div class="sidebar-item" onclick="setFilter('category','promo_2x1')" data-cat="promo_2x1">🔥 Promos 2×1 <span class="sidebar-count" id="cnt-promo_2x1">0</span></div>
-    <div class="sidebar-item" onclick="setFilter('category','gift_card')" data-cat="gift_card">🎁 Gift Cards <span class="sidebar-count" id="cnt-gift_card">0</span></div>
     <div class="sidebar-item" onclick="setFilter('category','otros')" data-cat="otros">📂 Otros <span class="sidebar-count" id="cnt-otros">0</span></div>
 
     <div class="sidebar-title" style="margin-top:8px">Género</div>
@@ -539,7 +538,6 @@
               <option value="deportivo">Deportivo</option>
               <option value="despertador">Despertador</option>
               <option value="promo_2x1">Promo 2×1</option>
-              <option value="gift_card">Gift Card</option>
               <option value="otros">Otros</option>
             </select>
           </div>
@@ -786,9 +784,6 @@ const DEMO = [
   { id:'au1', sku:'40001', name:'Auriculares Bluetooth TWS ANC', category:'auriculares', sub:'unisex', price:89000, origPrice:null, stock:10, image:'', desc:'TWS con cancelación de ruido activa. 8hs + estuche 24hs. IPX4.', tags:['tws','bluetooth','anc','ipx4'] },
   { id:'au2', sku:'40002', name:'Auriculares Deportivos Bluetooth', category:'auriculares', sub:'unisex', price:65000, origPrice:null, stock:8, image:'', desc:'Para actividad física. Fijación segura, IPX6, 6hs batería.', tags:['deporte','bluetooth','ipx6','sport'] },
   { id:'d1', sku:'50001', name:'Despertador Digital LED', category:'despertador', sub:'', price:38000, origPrice:null, stock:15, image:'', desc:'Pantalla LED, temperatura, fecha, alarma dual, función snooze.', tags:['digital','led','temperatura','alarma'] },
-  { id:'g1', sku:'60001', name:'Gift Card $15.000', category:'gift_card', sub:'', price:15000, origPrice:null, stock:999, image:'', desc:'Tarjeta regalo enviada por email. Válida en la tienda online.', tags:['regalo','gift','email'] },
-  { id:'g2', sku:'60002', name:'Gift Card $30.000', category:'gift_card', sub:'', price:30000, origPrice:null, stock:999, image:'', desc:'Tarjeta regalo enviada por email. Válida en la tienda online.', tags:['regalo','gift','email'] },
-  { id:'g3', sku:'60003', name:'Gift Card $50.000', category:'gift_card', sub:'', price:50000, origPrice:null, stock:999, image:'', desc:'Tarjeta regalo enviada por email. Válida en la tienda online.', tags:['regalo','gift','email'] },
 ];
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -860,8 +855,8 @@ function resolveImg(url) {
   return base ? `${base}/${url}` : url;
 }
 
-const CAT_EMOJI = { smartwatch:'⌚', clasico:'🕰', alta_gama:'💎', auriculares:'🎧', deportivo:'🏃', despertador:'⏰', promo_2x1:'🔥', gift_card:'🎁', otros:'📂' };
-const CAT_LABEL = { smartwatch:'Smartwatch', clasico:'Clásico', alta_gama:'Alta Gama', auriculares:'Auriculares', deportivo:'Deportivo', despertador:'Despertador', promo_2x1:'Promo 2×1', gift_card:'Gift Card', otros:'Otros' };
+const CAT_EMOJI = { smartwatch:'⌚', clasico:'🕰', alta_gama:'💎', auriculares:'🎧', deportivo:'🏃', despertador:'⏰', promo_2x1:'🔥', otros:'📂' };
+const CAT_LABEL = { smartwatch:'Smartwatch', clasico:'Clásico', alta_gama:'Alta Gama', auriculares:'Auriculares', deportivo:'Deportivo', despertador:'Despertador', promo_2x1:'Promo 2×1', otros:'Otros' };
 const SUB_LABEL = { mujer:'Mujer', hombre:'Hombre', unisex:'Unisex', nino:'Niño' };
 
 function applyFilters() {
@@ -961,7 +956,7 @@ function rowHTML(p) {
 
 function updateSidebarCounts() {
   document.getElementById('cnt-all').textContent = S.products.length;
-  ['smartwatch','clasico','alta_gama','auriculares','deportivo','despertador','promo_2x1','gift_card','otros'].forEach(c => {
+  ['smartwatch','clasico','alta_gama','auriculares','deportivo','despertador','promo_2x1','otros'].forEach(c => {
     const el = document.getElementById(`cnt-${c}`);
     if (el) el.textContent = S.products.filter(p => p.category===c).length;
   });
@@ -1365,13 +1360,13 @@ function mapCategory(raw) {
   if (t.includes('alta') || t.includes('crono'))       return 'alta_gama';
   if (t.includes('auric') || t.includes('tws'))        return 'auriculares';
   if (t.includes('despert') || t.includes('alarm'))    return 'despertador';
-  if (t.includes('gift') || t.includes('regalo'))         return 'gift_card';
+  if (t.includes('gift') || t.includes('regalo'))         return 'otros';
   if (t.includes('deport') || t.includes('sport'))        return 'deportivo';
   if (t.includes('2x1') || t.includes('2 x 1') || t.includes('promo')) return 'promo_2x1';
   if (t.includes('otro') || t.includes('other') || t.includes('misc')) return 'otros';
   if (t.includes('clasico') || t.includes('clásico') || t === 'classic') return 'clasico';
   // If it already matches a valid key, keep it
-  if (['smartwatch','clasico','alta_gama','auriculares','deportivo','despertador','promo_2x1','gift_card','otros'].includes(t)) return t;
+  if (['smartwatch','clasico','alta_gama','auriculares','deportivo','despertador','promo_2x1','otros'].includes(t)) return t;
   return 'otros';
 }
 
@@ -1468,7 +1463,6 @@ function downloadTemplate() {
     '30001,Cronógrafo Alta Gama,alta_gama,hombre,234500,290500,3,,Cristal zafiro 10ATM automático,"cronógrafo,zafiro"',
     '40001,Auriculares TWS ANC,auriculares,unisex,89000,,10,,Cancelación de ruido IPX4 8hs,"tws,bluetooth,anc"',
     '50001,Despertador Digital LED,despertador,,38000,,15,,Alarma dual snooze temperatura,"digital,led"',
-    '60001,Gift Card $15000,gift_card,,15000,,999,,Válida en tienda online,"regalo,gift"',
   ];
   const csv = [header, ...examples].join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }); // BOM for Excel
