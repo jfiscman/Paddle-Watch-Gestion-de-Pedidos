@@ -1,95 +1,220 @@
-# 🕐 Paddle Watch — Sistema de Pedidos
+# PaddleWatch · Catálogo Interactivo de Vendedores
 
-Aplicación web de gestión de pedidos para **Paddle Watch**, construida como un único archivo HTML sin dependencias externas ni servidor. Funciona 100% en el navegador.
-
----
-
-## ✨ Funcionalidades
-
-### 📦 Catálogo de productos
-- +200 modelos organizados por categoría: Caballero Análogo, Dama, Digital, Infantil, Unisex y más
-- Cada producto muestra código, nombre, precio, material, diámetro, medida de muñeca y características
-- Secciones colapsables con contador de modelos por categoría
-- Búsqueda en tiempo real por nombre o código
-
-### 🛒 Gestión de pedidos
-- Agregar/quitar unidades de cada producto
-- Resumen de pedido con subtotal y total
-- Generación automática de mensaje de pedido formateado
-- Envío directo por **WhatsApp** o **Email** con un clic
-
-### 👥 Base de clientes (62.630 registros)
-- Base de datos completa importada desde el sistema de gestión
-- Campos: Nombre/Negocio, Código de cliente, Teléfono, CUIT, Condición de IVA
-- **Autocompletado** al tipear el nombre del cliente en el formulario de pedido
-- Navegación con teclado (↑↓ flechas, Enter, Escape)
-- Búsqueda por nombre, código o CUIT
-
-### 📋 Gestión de la base de clientes
-- Agregar clientes manualmente
-- **Importar desde Excel (.xlsx) o CSV** — detecta columnas automáticamente por encabezado
-- **Exportar a CSV** para backup o edición en Excel
-- Eliminar clientes individuales con confirmación
-- Buscador interno con contador de resultados
+Catálogo digital offline-first para el equipo de ventas de PaddleWatch. Funciona como aplicación instalable en tablets y computadoras (PWA), sin necesidad de conexión a internet una vez instalado.
 
 ---
 
-## 🗂 Estructura del proyecto
+## Características
+
+### Catálogo de Productos
+- Grilla y lista de productos con imagen, SKU, precio y stock
+- Búsqueda en tiempo real por nombre, SKU, descripción y tags
+- Filtros por categoría, género y rango de precio
+- Ordenamiento por nombre, precio ascendente/descendente
+- 9 categorías: Smartwatch · Clásico · Alta Gama · Auriculares · Deportivo · Despertador · Promo 2×1 · Gift Card · Otros
+- Ficha de producto con detalle completo
+
+### Presupuestos
+- Armado de presupuesto con múltiples productos
+- Control de cantidades, descuento porcentual y notas
+- SKU visible en cada ítem del presupuesto
+- Vinculación de cliente desde la base de datos
+- Exportar como **PDF** (imprimible), **WhatsApp** y **Email**
+
+### Base de Clientes
+- Búsqueda con autocompletar al armar un presupuesto
+- Creación rápida de cliente desde el buscador
+- Campos: Nombre · Teléfono · Email · CUIT · Dirección · Notas
+- Importar desde CSV (compatible con Excel y Google Sheets)
+- Exportar a CSV para backup
+- Plantilla de ejemplo descargable
+
+### Sincronización con Google Sheets
+- El encargado actualiza precios, stock y productos en una planilla compartida
+- Los vendedores sincronizan con un toque desde el catálogo
+- Compatible con cualquier formato de URL de Google Sheets
+- Columnas detectadas automáticamente (acepta nombres en español e inglés)
+
+### Imágenes de Productos
+- Soporte para imágenes hosteadas en GitHub Pages (recomendado)
+- URL base configurable: solo se escribe el nombre del archivo en la planilla
+- Fallback automático al emoji de categoría cuando no hay imagen o conexión
+
+### Offline (PWA)
+- Funciona sin internet una vez instalado
+- Datos guardados en el dispositivo (localStorage)
+- Imágenes cacheadas al primer uso con conexión
+- Banner de actualización automática cuando hay nueva versión disponible
+- Instalable en Android, iOS, Windows y macOS
+
+---
+
+## Estructura del Proyecto
 
 ```
-paddle-pedidos/
-└── paddle_pedidos.html    # Aplicación completa (archivo único, ~5 MB)
+Paddle-Watch-Gestion-de-Pedidos/
+├── index.html          → Catálogo completo (app principal)
+├── manifest.json       → Configuración PWA (nombre, íconos, colores)
+├── sw.js               → Service Worker (caché offline)
+├── icons/
+│   ├── icon-192.png    → Ícono para pantalla de inicio (Android)
+│   ├── icon-512.png    → Ícono de alta resolución
+│   └── favicon.png     → Favicon del navegador
+└── imagenes/           → (opcional) Imágenes de productos locales
+    ├── smartwatch-negro.jpg
+    └── reloj-clasico.jpg
 ```
 
-Todo está contenido en un solo archivo HTML que incluye:
-- CSS con tema oscuro (dark mode)
-- JavaScript con toda la lógica de la app
-- Logo de Paddle en formato Base64 embebido
-- Base de clientes completa pre-cargada
+---
+
+## Configuración Inicial
+
+### 1. GitHub Pages (acceso desde cualquier dispositivo)
+
+1. Subir todos los archivos al repositorio `jfiscman/Paddle-Watch-Gestion-de-Pedidos`
+2. Ir a **Settings → Pages → Source → Deploy from branch → `main` → `/ (root)`**
+3. En ~2 minutos el catálogo queda disponible en:
+
+```
+https://jfiscman.github.io/Paddle-Watch-Gestion-de-Pedidos/
+```
+
+### 2. Instalar en tablet Android
+
+1. Abrir Chrome en la tablet
+2. Navegar a la URL de GitHub Pages
+3. Chrome muestra el banner **"Agregar a pantalla de inicio"**
+   (o tocar los 3 puntos → **Instalar app**)
+4. El catálogo queda instalado con el ícono de PaddleWatch
+
+### 3. Servidor local (uso sin internet desde PC/Mac)
+
+Desde la carpeta del proyecto, ejecutar en la terminal:
+
+```bash
+python3 -m http.server 8080
+```
+
+Luego abrir en el navegador:
+```
+http://localhost:8080/
+```
 
 ---
 
-## 🚀 Cómo usar
+## Configuración de Google Sheets
 
-1. Descargar `paddle_pedidos.html`
-2. Abrirlo en cualquier navegador moderno (Chrome, Safari, Firefox)
-3. No requiere instalación, servidor ni conexión a internet
+### Estructura de la planilla
 
-> La base de clientes se guarda en el `localStorage` del navegador, por lo que los cambios (agregar/eliminar clientes vía importación) persisten entre sesiones en el mismo dispositivo.
+| SKU | Nombre | Categoría | Género | Precio | Precio Original | Stock | Imagen URL | Descripción | Tags |
+|-----|--------|-----------|--------|--------|----------------|-------|------------|-------------|------|
+| 16011 | Smartwatch Negro | smartwatch | unisex | 175500 | | 4 | imagenes/sw-negro.jpg | Pantalla táctil... | bluetooth, llamadas |
 
----
+**Categorías válidas:** `smartwatch` · `clasico` · `alta_gama` · `auriculares` · `deportivo` · `despertador` · `promo_2x1` · `gift_card` · `otros`
 
-## 📥 Formato para importar clientes
+**Géneros válidos:** `mujer` · `hombre` · `unisex` · `nino`
 
-El archivo Excel o CSV debe tener una fila de encabezado. Las columnas se detectan automáticamente por nombre (no importa el orden):
+### Pasos para conectar
 
-| Columna esperada | Variantes reconocidas |
-|---|---|
-| Nombre | `nombre`, `negocio`, `razon`, `cliente` |
-| Teléfono | `telefono`, `tel`, `celular`, `mail`, `contacto` |
-| CUIT | `cuit`, `cuil` |
-| Condición IVA | `iva`, `condicion`, `situacion` |
-| Código | `codigo`, `cod`, `clave`, `id` |
+1. Crear la planilla en Google Sheets (descargar la plantilla desde ⚙ Ajustes en el catálogo)
+2. Ir a **Compartir → Cualquiera con el link puede ver**
+3. En el catálogo: **⚙ Ajustes → pegar la URL del Sheet → Guardar**
+4. Tocar **↻ Sincronizar** (o el botón dentro de Ajustes)
 
 ---
 
-## 🛠 Tecnologías
+## Configuración de Imágenes
 
-- HTML5 / CSS3 / JavaScript vanilla (sin frameworks)
-- [SheetJS](https://sheetjs.com/) cargado dinámicamente para leer archivos Excel
-- `localStorage` para persistencia de datos del cliente
-- Diseño responsivo con tema oscuro
+### Opción A — GitHub Pages (recomendada para uso con internet)
+
+1. Crear una carpeta `imagenes/` en el repositorio
+2. Subir las fotos de productos
+3. En el catálogo: **⚙ Ajustes → URL base de imágenes:**
+   ```
+   https://jfiscman.github.io/Paddle-Watch-Gestion-de-Pedidos/imagenes
+   ```
+4. En la planilla, columna "Imagen URL": solo el nombre del archivo
+   ```
+   smartwatch-negro.jpg
+   ```
+
+### Opción B — Servidor local (para uso offline en PC/Mac)
+
+Estructura de carpetas:
+```
+Paddle-Watch-Gestion-de-Pedidos/
+  index.html
+  imagenes/
+    smartwatch-negro.jpg
+    reloj-clasico.jpg
+```
+
+URL base en Ajustes:
+```
+http://localhost:8080/imagenes
+```
 
 ---
 
-## 📌 Pendientes / Próximas mejoras
+## Base de Clientes
 
-- [ ] Historial de pedidos
-- [ ] Filtros por precio en el catálogo
-- [ ] Notas internas por cliente
-- [ ] Soporte multi-divisa (ARS / USD)
-- [ ] Vista de impresión del pedido
+### Importar desde CSV
+
+El archivo CSV puede exportarse desde Excel, Google Sheets o cualquier sistema de gestión. Las columnas son detectadas automáticamente.
+
+**Columnas aceptadas:**
+
+| Dato | Nombres de columna aceptados |
+|------|------------------------------|
+| Nombre | Nombre, name, cliente, empresa, razón social |
+| Teléfono | Teléfono, tel, phone, celular, móvil |
+| Email | Email, mail, correo |
+| CUIT | CUIT, DNI, RUC, documento |
+| Dirección | Dirección, address, domicilio, dir |
+| Notas | Notas, notes, observaciones, comentarios |
+
+Para ver el formato exacto: **👥 Clientes → 📄 Plantilla**
 
 ---
 
-*Desarrollado para uso interno de Paddle Watch.*
+## Actualización del Catálogo
+
+### Para el encargado (actualizar precios/stock)
+
+1. Editar la planilla de Google Sheets
+2. Los vendedores sincronizan tocando **↻ Sincronizar** en el catálogo
+
+### Para el encargado (actualizar la app)
+
+1. Modificar `index.html` y subir al repositorio de GitHub
+2. En `sw.js`, incrementar el número de versión de caché:
+   ```js
+   const CACHE_NAME = 'pw-catalogo-v2';  // cambiar v1 → v2
+   ```
+3. GitHub Pages despliega automáticamente en ~2 minutos
+4. Los vendedores verán el banner verde **"Nueva versión disponible → Actualizar"**
+
+---
+
+## Datos y Privacidad
+
+Todos los datos (productos, clientes, presupuestos) se guardan **localmente en el dispositivo** usando `localStorage` del navegador. No se envía ningún dato a servidores externos salvo:
+
+- La sincronización con Google Sheets (lectura de la planilla configurada)
+- La carga de imágenes desde GitHub Pages
+
+---
+
+## Soporte de Dispositivos
+
+| Dispositivo | Estado |
+|-------------|--------|
+| Android (Chrome) | ✅ Instalable como app, offline completo |
+| iPhone / iPad (Safari) | ✅ Agregar a pantalla de inicio |
+| Windows (Chrome/Edge) | ✅ Instalable como app |
+| macOS (Chrome/Safari) | ✅ Instalable como app |
+| Cualquier navegador moderno | ✅ Funciona sin instalar |
+
+---
+
+*Desarrollado para el equipo de ventas de PaddleWatch · Argentina*
