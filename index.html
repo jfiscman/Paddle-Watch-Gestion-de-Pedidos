@@ -724,27 +724,33 @@
         <h4 id="custFormTitle">Nuevo Cliente</h4>
         <div class="form-row">
           <div class="form-group">
-            <label>Nombre *</label>
-            <input type="text" id="cfName" required placeholder="Nombre completo o razón social">
+            <label>N° de Cliente</label>
+            <input type="text" id="cfClientNum" placeholder="Ej: C0123">
           </div>
           <div class="form-group">
-            <label>Teléfono</label>
-            <input type="text" id="cfPhone" placeholder="Ej: 1112345678">
+            <label>Razón Social *</label>
+            <input type="text" id="cfName" required placeholder="Nombre o razón social">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" id="cfPhone" placeholder="Ej: 1112345678">
+          </div>
+          <div class="form-group">
             <label>Email</label>
             <input type="email" id="cfEmail" placeholder="cliente@email.com">
           </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label>CUIT / DNI</label>
             <input type="text" id="cfCuit" placeholder="20-12345678-9">
           </div>
-        </div>
-        <div class="form-group">
-          <label>Dirección</label>
-          <input type="text" id="cfAddress" placeholder="Av. Corrientes 1234, CABA">
+          <div class="form-group">
+            <label>Dirección</label>
+            <input type="text" id="cfAddress" placeholder="Av. Corrientes 1234, CABA">
+          </div>
         </div>
         <div class="form-group">
           <label>Notas internas</label>
@@ -1131,7 +1137,7 @@ function budgetText() {
   let t = `🧾 *Presupuesto ${S.cfg.name||'PaddleWatch'}*\n`;
   t += `📅 ${new Date().toLocaleDateString('es-AR')}\n`;
   if (c) {
-    t += `👤 *${c.name}*\n`;
+    t += `👤 *${c.clientNum ? `[${c.clientNum}] ` : ''}${c.name}*\n`;
     if (c.phone)   t += `📱 ${c.phone}\n`;
     if (c.email)   t += `📧 ${c.email}\n`;
     if (c.cuit)    t += `🪪 CUIT: ${c.cuit}\n`;
@@ -1159,6 +1165,7 @@ function budgetHTML() {
   ).join('');
   const custBlock = c ? `
     <table style="margin-bottom:16px;font-size:13px" cellpadding="3">
+      ${c.clientNum ? `<tr><td style="color:#888;width:80px">N° Cliente:</td><td><b>${c.clientNum}</b></td></tr>` : ''}
       <tr><td style="color:#888;width:80px">Cliente:</td><td><b>${c.name}</b></td></tr>
       ${c.cuit    ? `<tr><td style="color:#888">CUIT:</td><td>${c.cuit}</td></tr>` : ''}
       ${c.phone   ? `<tr><td style="color:#888">Tel:</td><td>${c.phone}</td></tr>` : ''}
@@ -1539,14 +1546,14 @@ function onCustSearch(q) {
   saveBudget();
   if (!q.trim()) { closeCustDrop(); return; }
   const matches = S.customers.filter(c => {
-    const s = (c.name+c.phone+c.email+c.cuit).toLowerCase();
+    const s = ((c.clientNum||'')+c.name+c.phone+c.email+c.cuit).toLowerCase();
     return s.includes(q.toLowerCase());
   }).slice(0, 7);
 
   const drop = document.getElementById('custDrop');
   const items = matches.map(c => `
     <div class="cust-option" onclick="selectCustomer('${c.id}')">
-      <div class="cust-option-name">${c.name}</div>
+      <div class="cust-option-name">${c.clientNum ? `<span style="color:var(--accent)">[${c.clientNum}]</span> ` : ''}${c.name}</div>
       <div class="cust-option-meta">${[c.phone,c.email,c.cuit].filter(Boolean).join(' · ')}</div>
     </div>`).join('');
   const newOpt = `<div class="cust-option" onclick="quickCreateCustomer('${q.replace(/'/g,"\'")}')">
@@ -1579,7 +1586,7 @@ function selectCustomer(id) {
 function showCustomerCard(c) {
   document.getElementById('custCard').style.display = 'block';
   document.getElementById('custSearchWrap').style.display = 'none';
-  document.getElementById('custCardName').textContent = c.name;
+  document.getElementById('custCardName').textContent = (c.clientNum ? `[${c.clientNum}] ` : '') + c.name;
   const meta = [
     c.phone   ? '📱 '+c.phone   : '',
     c.email   ? '📧 '+c.email   : '',
@@ -1601,7 +1608,7 @@ function clearCustomer(silent) {
 }
 
 function quickCreateCustomer(name) {
-  const c = { id:'cust_'+Date.now(), name, phone:'', email:'', address:'', cuit:'', notes:'' };
+  const c = { id:'cust_'+Date.now(), clientNum:'', name, phone:'', email:'', address:'', cuit:'', notes:'' };
   S.customers.push(c);
   saveCustomersStore();
   selectCustomer(c.id);
@@ -1623,7 +1630,7 @@ function renderCustomerList(q) {
   if (q) {
     const ql = q.toLowerCase();
     filtered = S.customers.filter(c =>
-      (c.name+c.phone+c.email+c.cuit+c.address).toLowerCase().includes(ql)
+      ((c.clientNum||'')+c.name+c.phone+c.email+c.cuit+c.address).toLowerCase().includes(ql)
     );
   }
   countEl.textContent = `${filtered.length} cliente${filtered.length!==1?'s':''}`;
@@ -1641,7 +1648,7 @@ function renderCustomerList(q) {
     return `<div class="cust-row" onclick="openEditCustomer('${c.id}')">
       <div class="cust-row-avatar">${initials}</div>
       <div class="cust-row-info">
-        <div class="cust-row-name">${c.name}</div>
+        <div class="cust-row-name">${c.clientNum ? `<span style="color:var(--accent);font-size:.75em;margin-right:4px">[${c.clientNum}]</span>` : ''}${c.name}</div>
         <div class="cust-row-meta">${meta}</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();selectCustomerFromModal('${c.id}')" style="flex-shrink:0">Seleccionar</button>
@@ -1659,13 +1666,14 @@ function selectCustomerFromModal(id) {
 
 function openNewCustomerForm() {
   document.getElementById('custFormTitle').textContent = 'Nuevo Cliente';
-  document.getElementById('cfId').value      = '';
-  document.getElementById('cfName').value    = '';
-  document.getElementById('cfPhone').value   = '';
-  document.getElementById('cfEmail').value   = '';
-  document.getElementById('cfCuit').value    = '';
-  document.getElementById('cfAddress').value = '';
-  document.getElementById('cfNotes').value   = '';
+  document.getElementById('cfId').value        = '';
+  document.getElementById('cfClientNum').value = '';
+  document.getElementById('cfName').value      = '';
+  document.getElementById('cfPhone').value     = '';
+  document.getElementById('cfEmail').value     = '';
+  document.getElementById('cfCuit').value      = '';
+  document.getElementById('cfAddress').value   = '';
+  document.getElementById('cfNotes').value     = '';
   document.getElementById('cfDeleteBtn').style.display = 'none';
   document.getElementById('custForm').style.display = 'block';
   document.getElementById('cfName').focus();
@@ -1675,13 +1683,14 @@ function openEditCustomer(id) {
   const c = S.customers.find(x=>x.id===id);
   if (!c) return;
   document.getElementById('custFormTitle').textContent = 'Editar Cliente';
-  document.getElementById('cfId').value      = c.id;
-  document.getElementById('cfName').value    = c.name;
-  document.getElementById('cfPhone').value   = c.phone   ||'';
-  document.getElementById('cfEmail').value   = c.email   ||'';
-  document.getElementById('cfCuit').value    = c.cuit    ||'';
-  document.getElementById('cfAddress').value = c.address ||'';
-  document.getElementById('cfNotes').value   = c.notes   ||'';
+  document.getElementById('cfId').value        = c.id;
+  document.getElementById('cfClientNum').value = c.clientNum ||'';
+  document.getElementById('cfName').value      = c.name;
+  document.getElementById('cfPhone').value     = c.phone   ||'';
+  document.getElementById('cfEmail').value     = c.email   ||'';
+  document.getElementById('cfCuit').value      = c.cuit    ||'';
+  document.getElementById('cfAddress').value   = c.address ||'';
+  document.getElementById('cfNotes').value     = c.notes   ||'';
   document.getElementById('cfDeleteBtn').style.display = 'inline-flex';
   document.getElementById('custForm').style.display = 'block';
   if (!document.getElementById('customerModal').classList.contains('hidden')) return;
@@ -1690,10 +1699,11 @@ function openEditCustomer(id) {
 
 function saveCustomer() {
   const name = document.getElementById('cfName').value.trim();
-  if (!name) { toast('El nombre es obligatorio'); return; }
+  if (!name) { toast('La razón social es obligatoria'); return; }
   const id = document.getElementById('cfId').value;
   const c = {
-    id:      id || 'cust_'+Date.now(),
+    id:        id || 'cust_'+Date.now(),
+    clientNum: document.getElementById('cfClientNum').value.trim(),
     name,
     phone:   document.getElementById('cfPhone').value.trim(),
     email:   document.getElementById('cfEmail').value.trim(),
@@ -1741,10 +1751,11 @@ function importCustomersCSV(ev) {
       const rows = parseCSV(e.target.result);
       if (!rows.length) throw new Error('Archivo vacío o sin encabezados');
       const imported = rows.map((row, idx) => {
-        const name = col(row,'nombre','name','razon social','razón social','cliente','empresa','company');
+        const name = col(row,'razon social','razón social','nombre','name','cliente','empresa','company');
         if (!name) return null;
         return {
-          id:      'cust_imp_'+Date.now()+'_'+idx,
+          id:        'cust_imp_'+Date.now()+'_'+idx,
+          clientNum: col(row,'n° de cliente','nro cliente','num cliente','numero cliente','n° cliente','clientnum','client num','client_num'),
           name,
           phone:   col(row,'telefono','teléfono','tel','phone','celular','móvil','movil'),
           email:   col(row,'email','mail','correo'),
@@ -1753,7 +1764,7 @@ function importCustomersCSV(ev) {
           notes:   col(row,'notas','notes','observaciones','obs','comentarios'),
         };
       }).filter(Boolean);
-      if (!imported.length) throw new Error('No se encontró la columna "Nombre"');
+      if (!imported.length) throw new Error('No se encontró la columna "Razón Social"');
       if (!confirm(`¿Importar ${imported.length} clientes? Se agregarán a los existentes.`)) return;
       S.customers = [...S.customers, ...imported];
       saveCustomersStore();
@@ -1767,9 +1778,9 @@ function importCustomersCSV(ev) {
 
 function exportCustomersCSV() {
   if (!S.customers.length) { toast('No hay clientes para exportar'); return; }
-  const header = 'Nombre,Teléfono,Email,CUIT,Dirección,Notas';
+  const header = 'N° de Cliente,Razón Social,Teléfono,Email,CUIT,Dirección,Notas';
   const rows = S.customers.map(c =>
-    [c.name,c.phone,c.email,c.cuit,c.address,c.notes]
+    [c.clientNum,c.name,c.phone,c.email,c.cuit,c.address,c.notes]
       .map(v => `"${(v||'').replace(/"/g,'""')}"`)
       .join(',')
   );
@@ -1784,10 +1795,10 @@ function exportCustomersCSV() {
 }
 
 function downloadCustomerTemplate() {
-  const csv = `Nombre,Teléfono,Email,CUIT,Dirección,Notas
-"Juan Pérez","1112345678","juan@email.com","20-12345678-9","Av. Corrientes 1234 CABA","Cliente mayorista"
-"María García","1187654321","maria@empresa.com","27-87654321-6","Belgrano 500 Rosario","Pago a 30 días"
-"Distribuidora Norte SA","3412223344","compras@dnorte.com","30-99887766-5","San Martín 789 Córdoba","VIP"`;
+  const csv = `N° de Cliente,Razón Social,Teléfono,Email,CUIT,Dirección,Notas
+"C001","Juan Pérez","1112345678","juan@email.com","20-12345678-9","Av. Corrientes 1234 CABA","Cliente mayorista"
+"C002","María García","1187654321","maria@empresa.com","27-87654321-6","Belgrano 500 Rosario","Pago a 30 días"
+"C003","Distribuidora Norte SA","3412223344","compras@dnorte.com","30-99887766-5","San Martín 789 Córdoba","VIP"`;
   const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   const a = Object.assign(document.createElement('a'),{
     href:URL.createObjectURL(blob),
