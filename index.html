@@ -750,9 +750,20 @@
             <input type="text" id="cfAddress" placeholder="Av. Corrientes 1234, CABA">
           </div>
         </div>
-        <div class="form-group">
-          <label>Notas internas</label>
-          <input type="text" id="cfNotes" placeholder="Cliente VIP, condición de pago, etc.">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Condición de pago</label>
+            <select id="cfPayment" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:white">
+              <option value="">— Sin especificar —</option>
+              <option value="100">100 — Factura IVA 21%</option>
+              <option value="x000">x000 — Factura IVA 10.5%</option>
+              <option value="x50">x50 — Sin IVA / Exento</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notas internas</label>
+            <input type="text" id="cfNotes" placeholder="Observaciones, referencias, etc.">
+          </div>
         </div>
         <input type="hidden" id="cfId">
         <div class="form-actions" style="margin-top:12px;padding-top:10px">
@@ -1152,6 +1163,7 @@ function budgetText() {
     if (c.phone)   t += `📱 ${c.phone}\n`;
     if (c.email)   t += `📧 ${c.email}\n`;
     if (c.cuit)    t += `🪪 CUIT: ${c.cuit}\n`;
+    if (c.payment) t += `🧾 Cond. pago: ${c.payment}\n`;
     if (c.address) t += `📍 ${c.address}\n`;
   } else if (customer) {
     t += `👤 Cliente: ${customer}\n`;
@@ -1179,6 +1191,7 @@ function budgetHTML() {
       ${c.clientNum ? `<tr><td style="color:#888;width:80px">N° Cliente:</td><td><b>${c.clientNum}</b></td></tr>` : ''}
       <tr><td style="color:#888;width:80px">Cliente:</td><td><b>${c.name}</b></td></tr>
       ${c.cuit    ? `<tr><td style="color:#888">CUIT:</td><td>${c.cuit}</td></tr>` : ''}
+      ${c.payment ? `<tr><td style="color:#888">Cond. pago:</td><td>${c.payment}</td></tr>` : ''}
       ${c.phone   ? `<tr><td style="color:#888">Tel:</td><td>${c.phone}</td></tr>` : ''}
       ${c.email   ? `<tr><td style="color:#888">Email:</td><td>${c.email}</td></tr>` : ''}
       ${c.address ? `<tr><td style="color:#888">Dir:</td><td>${c.address}</td></tr>` : ''}
@@ -1601,10 +1614,12 @@ function showCustomerCard(c) {
   document.getElementById('custCard').style.display = 'block';
   document.getElementById('custSearchWrap').style.display = 'none';
   document.getElementById('custCardName').textContent = (c.clientNum ? `[${c.clientNum}] ` : '') + c.name;
+  const PAY_LABEL = { '100':'IVA 21%', 'x000':'IVA 10.5%', 'x50':'Sin IVA' };
   const meta = [
     c.phone   ? '📱 '+c.phone   : '',
     c.email   ? '📧 '+c.email   : '',
     c.cuit    ? '🪪 '+c.cuit    : '',
+    c.payment ? '🧾 Cond. '+c.payment+' ('+( PAY_LABEL[c.payment]||c.payment)+')' : '',
     c.address ? '📍 '+c.address : '',
     c.notes   ? '📝 '+c.notes   : '',
   ].filter(Boolean).join('<br>');
@@ -1658,7 +1673,8 @@ function renderCustomerList(q) {
   }
   list.innerHTML = filtered.map(c => {
     const initials = c.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-    const meta = [c.phone, c.email, c.cuit].filter(Boolean).join(' · ') || 'Sin datos de contacto';
+    const PAY_LABEL = { '100':'IVA 21%', 'x000':'IVA 10.5%', 'x50':'Sin IVA' };
+    const meta = [c.phone, c.email, c.cuit, c.payment ? 'Cond. '+c.payment : ''].filter(Boolean).join(' · ') || 'Sin datos de contacto';
     return `<div class="cust-row" onclick="openEditCustomer('${c.id}')">
       <div class="cust-row-avatar">${initials}</div>
       <div class="cust-row-info">
@@ -1687,6 +1703,7 @@ function openNewCustomerForm() {
   document.getElementById('cfEmail').value     = '';
   document.getElementById('cfCuit').value      = '';
   document.getElementById('cfAddress').value   = '';
+  document.getElementById('cfPayment').value   = '';
   document.getElementById('cfNotes').value     = '';
   document.getElementById('cfDeleteBtn').style.display = 'none';
   document.getElementById('custForm').style.display = 'block';
@@ -1704,6 +1721,7 @@ function openEditCustomer(id) {
   document.getElementById('cfEmail').value     = c.email   ||'';
   document.getElementById('cfCuit').value      = c.cuit    ||'';
   document.getElementById('cfAddress').value   = c.address ||'';
+  document.getElementById('cfPayment').value   = c.payment ||'';
   document.getElementById('cfNotes').value     = c.notes   ||'';
   document.getElementById('cfDeleteBtn').style.display = 'inline-flex';
   document.getElementById('custForm').style.display = 'block';
@@ -1723,6 +1741,7 @@ function saveCustomer() {
     email:   document.getElementById('cfEmail').value.trim(),
     cuit:    document.getElementById('cfCuit').value.trim(),
     address: document.getElementById('cfAddress').value.trim(),
+    payment: document.getElementById('cfPayment').value,
     notes:   document.getElementById('cfNotes').value.trim(),
   };
   if (id) {
@@ -1774,6 +1793,7 @@ function importCustomersCSV(ev) {
           phone:   col(row,'telefono','teléfono','tel','phone','celular','móvil','movil'),
           email:   col(row,'email','mail','correo'),
           cuit:    col(row,'cuit','dni','ruc','documento'),
+          payment: col(row,'condición de pago','condicion de pago','cond pago','condicion','payment','iva','cond'),
           address: col(row,'direccion','dirección','address','domicilio','dir'),
           notes:   col(row,'notas','notes','observaciones','obs','comentarios'),
         };
@@ -1792,9 +1812,9 @@ function importCustomersCSV(ev) {
 
 function exportCustomersCSV() {
   if (!S.customers.length) { toast('No hay clientes para exportar'); return; }
-  const header = 'N° de Cliente,Razón Social,Teléfono,Email,CUIT,Dirección,Notas';
+  const header = 'N° de Cliente,Razón Social,Teléfono,Email,CUIT,Condición de pago,Dirección,Notas';
   const rows = S.customers.map(c =>
-    [c.clientNum,c.name,c.phone,c.email,c.cuit,c.address,c.notes]
+    [c.clientNum,c.name,c.phone,c.email,c.cuit,c.payment,c.address,c.notes]
       .map(v => `"${(v||'').replace(/"/g,'""')}"`)
       .join(',')
   );
@@ -1809,10 +1829,10 @@ function exportCustomersCSV() {
 }
 
 function downloadCustomerTemplate() {
-  const csv = `N° de Cliente,Razón Social,Teléfono,Email,CUIT,Dirección,Notas
-"C001","Juan Pérez","1112345678","juan@email.com","20-12345678-9","Av. Corrientes 1234 CABA","Cliente mayorista"
-"C002","María García","1187654321","maria@empresa.com","27-87654321-6","Belgrano 500 Rosario","Pago a 30 días"
-"C003","Distribuidora Norte SA","3412223344","compras@dnorte.com","30-99887766-5","San Martín 789 Córdoba","VIP"`;
+  const csv = `N° de Cliente,Razón Social,Teléfono,Email,CUIT,Condición de pago,Dirección,Notas
+"C001","Juan Pérez","1112345678","juan@email.com","20-12345678-9","100","Av. Corrientes 1234 CABA","Cliente mayorista"
+"C002","María García","1187654321","maria@empresa.com","27-87654321-6","x50","Belgrano 500 Rosario","Monotributista"
+"C003","Distribuidora Norte SA","3412223344","compras@dnorte.com","30-99887766-5","x000","San Martín 789 Córdoba","VIP"`;
   const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   const a = Object.assign(document.createElement('a'),{
     href:URL.createObjectURL(blob),
