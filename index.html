@@ -1320,16 +1320,20 @@ function buildCsvUrl(sheetId) {
 
 // Parse CSV text into array of row objects keyed by header
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
+  // Strip BOM and normalize line endings
+  const clean = text.replace(/^﻿/, '').trim();
+  const lines = clean.split(/\r?\n/);
   if (lines.length < 2) return [];
 
-  // Handle quoted fields
+  // Auto-detect separator: semicolon (Excel Argentina) or comma
+  const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+
   function splitRow(line) {
     const cols = []; let cur = ''; let inQ = false;
     for (let i = 0; i < line.length; i++) {
       const c = line[i];
       if (c === '"') { inQ = !inQ; }
-      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else if (c === sep && !inQ) { cols.push(cur.trim()); cur = ''; }
       else cur += c;
     }
     cols.push(cur.trim());
