@@ -624,6 +624,19 @@
         </div>
       </div>
       <div class="settings-box">
+        <h4>👤 Vendedor</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre del vendedor</label>
+            <input type="text" id="sSellerName" placeholder="Ej: María García">
+          </div>
+          <div class="form-group">
+            <label>Código de vendedor</label>
+            <input type="text" id="sSellerCode" placeholder="Ej: V01">
+          </div>
+        </div>
+      </div>
+      <div class="settings-box">
         <h4>📦 Catálogo de Productos</h4>
         <p style="font-size:11px;color:var(--muted);margin-bottom:10px">
           Descargá la plantilla, completala en Excel o Google Sheets, y volvé a importarla.<br>
@@ -824,7 +837,7 @@ const S = {
   filters: { search:'', category:'', sub:'', minPrice:0, maxPrice:Infinity, sort:'default' },
   budget: { items:[], customerId:null, customer:'', notes:'', discount:0, num:0 },
   budgetHistory: [],
-  cfg: { name:'PaddleWatch', phone:'', email:'', imageBaseUrl:'' }
+  cfg: { name:'PaddleWatch', phone:'', email:'', imageBaseUrl:'', sellerName:'', sellerCode:'' }
 };
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
@@ -1393,6 +1406,10 @@ function budgetText(b) {
   if (discount>0) t += `Descuento (${discount}%): -${$ARS(dAmt)}\n`;
   t += `*TOTAL: ${$ARS(total)}*\n`;
   if (notes) t += `\n📝 ${notes}\n`;
+  if (S.cfg.sellerName || S.cfg.sellerCode) {
+    const seller = [S.cfg.sellerName, S.cfg.sellerCode ? `(${S.cfg.sellerCode})` : ''].filter(Boolean).join(' ');
+    t += `\n🧑‍💼 Vendedor: ${seller}\n`;
+  }
   return t;
 }
 
@@ -1443,7 +1460,10 @@ function budgetHTML(b) {
     <tr class="grand"><td>TOTAL:</td><td style="text-align:right">${$ARS(total)}</td></tr>
   </table>
   ${notes?`<div class="notes"><b>Notas:</b> ${notes}</div>`:''}
-  <div class="footer">${S.cfg.phone?`Tel: +${S.cfg.phone} · `:''} ${S.cfg.email||''}</div>
+  <div class="footer">
+    ${S.cfg.sellerName||S.cfg.sellerCode ? `<span>Vendedor: <b>${[S.cfg.sellerName, S.cfg.sellerCode?`(${S.cfg.sellerCode})`:''].filter(Boolean).join(' ')}</b></span> &nbsp;·&nbsp; ` : ''}
+    ${S.cfg.phone?`Tel: +${S.cfg.phone} · `:''} ${S.cfg.email||''}
+  </div>
   <script>window.onload=()=>window.print()<\/script></body></html>`;
 }
 
@@ -1704,10 +1724,12 @@ function stripTags(html) {
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 function openSettings() {
-  document.getElementById('sName').value   = S.cfg.name||'';
-  document.getElementById('sPhone').value  = S.cfg.phone||'';
-  document.getElementById('sEmail').value  = S.cfg.email||'';
-  document.getElementById('sImageBase').value = S.cfg.imageBaseUrl||'';
+  document.getElementById('sName').value       = S.cfg.name||'';
+  document.getElementById('sPhone').value      = S.cfg.phone||'';
+  document.getElementById('sEmail').value      = S.cfg.email||'';
+  document.getElementById('sSellerName').value = S.cfg.sellerName||'';
+  document.getElementById('sSellerCode').value = S.cfg.sellerCode||'';
+  document.getElementById('sImageBase').value  = S.cfg.imageBaseUrl||'';
   const lastImport = store.get('pw_lastImport');
   const statusEl = document.getElementById('syncStatus');
   if (statusEl && lastImport) {
@@ -1723,6 +1745,8 @@ function saveSettings() {
     name:         document.getElementById('sName').value,
     phone:        document.getElementById('sPhone').value,
     email:        document.getElementById('sEmail').value,
+    sellerName:   document.getElementById('sSellerName').value.trim(),
+    sellerCode:   document.getElementById('sSellerCode').value.trim(),
     imageBaseUrl: document.getElementById('sImageBase').value.trim().replace(/\/$/, ''),
   };
   store.set('pw_cfg', S.cfg);
