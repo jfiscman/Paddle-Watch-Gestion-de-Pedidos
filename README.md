@@ -11,7 +11,7 @@ Catálogo digital offline-first para el equipo de ventas de PaddleWatch. Funcion
 - Búsqueda en tiempo real por nombre, SKU, descripción y tags
 - Filtros por categoría, género y rango de precio
 - Ordenamiento por nombre, precio ascendente/descendente
-- 9 categorías: Smartwatch · Clásico · Alta Gama · Auriculares · Deportivo · Despertador · Promo 2×1 · Gift Card · Otros
+- 8 categorías: Smartwatch · Clásico · Alta Gama · Auriculares · Deportivo · Despertador · Promo 2×1 · Otros
 - Ficha de producto con detalle completo
 
 ### Presupuestos
@@ -20,30 +20,31 @@ Catálogo digital offline-first para el equipo de ventas de PaddleWatch. Funcion
 - SKU visible en cada ítem del presupuesto
 - Vinculación de cliente desde la base de datos
 - Exportar como **PDF** (imprimible), **WhatsApp** y **Email**
+- El PDF y WhatsApp incluyen todos los datos del cliente: nombre, CUIT, condición de pago, dirección y observaciones
+- **Historial de presupuestos guardados**: guardar, reabrir y reenviar presupuestos anteriores sin perder el activo
 
 ### Base de Clientes
 - Búsqueda con autocompletar al armar un presupuesto
 - Creación rápida de cliente desde el buscador
-- Campos: Nombre · Teléfono · Email · CUIT · Dirección · Notas
+- Campos: N° de Cliente · Nombre · Teléfono · Email · CUIT · Dirección · **Condición de pago** · Notas
+- **Condición de pago** con tres opciones:
+  - `x50` — Sin IVA / Exento
+  - `x000` — IVA 10.5%
+  - `100` — IVA 21%
 - Importar desde CSV (compatible con Excel y Google Sheets)
 - Exportar a CSV para backup
-- Plantilla de ejemplo descargable
-
-### Sincronización con Google Sheets
-- El encargado actualiza precios, stock y productos en una planilla compartida
-- Los vendedores sincronizan con un toque desde el catálogo
-- Compatible con cualquier formato de URL de Google Sheets
-- Columnas detectadas automáticamente (acepta nombres en español e inglés)
+- Plantilla de ejemplo descargable (incluye columna de condición de pago)
 
 ### Imágenes de Productos
-- Soporte para imágenes hosteadas en GitHub Pages (recomendado)
+- **Carga directa desde el dispositivo** (recomendado para tablets Android): seleccionás las imágenes una sola vez, quedan guardadas en la app sin necesidad de conexión ni servidor
+- Soporte para imágenes hosteadas en GitHub Pages o servidor local (PC/Mac)
 - URL base configurable: solo se escribe el nombre del archivo en la planilla
-- Fallback automático al emoji de categoría cuando no hay imagen o conexión
+- Fallback automático al emoji de categoría cuando no hay imagen
 
 ### Offline (PWA)
 - Funciona sin internet una vez instalado
-- Datos guardados en el dispositivo (localStorage)
-- Imágenes cacheadas al primer uso con conexión
+- Datos guardados en el dispositivo (localStorage + IndexedDB para imágenes)
+- Imágenes cacheadas al primer uso con conexión o cargadas desde el dispositivo
 - Banner de actualización automática cuando hay nueva versión disponible
 - Instalable en Android, iOS, Windows y macOS
 
@@ -108,9 +109,9 @@ http://localhost:8080/
 
 | SKU | Nombre | Categoría | Género | Precio | Precio Original | Stock | Imagen URL | Descripción | Tags |
 |-----|--------|-----------|--------|--------|----------------|-------|------------|-------------|------|
-| 16011 | Smartwatch Negro | smartwatch | unisex | 175500 | | 4 | imagenes/sw-negro.jpg | Pantalla táctil... | bluetooth, llamadas |
+| 16011 | Smartwatch Negro | smartwatch | unisex | 175500 | | 4 | smartwatch-negro.jpg | Pantalla táctil... | bluetooth, llamadas |
 
-**Categorías válidas:** `smartwatch` · `clasico` · `alta_gama` · `auriculares` · `deportivo` · `despertador` · `promo_2x1` · `gift_card` · `otros`
+**Categorías válidas:** `smartwatch` · `clasico` · `alta_gama` · `auriculares` · `deportivo` · `despertador` · `promo_2x1` · `otros`
 
 **Géneros válidos:** `mujer` · `hombre` · `unisex` · `nino`
 
@@ -125,7 +126,18 @@ http://localhost:8080/
 
 ## Configuración de Imágenes
 
-### Opción A — GitHub Pages (recomendada para uso con internet)
+### Opción A — Carga desde el dispositivo (recomendada para tablet Android)
+
+Ideal para uso offline completo sin depender de internet:
+
+1. En el catálogo: **⚙ Ajustes → Imágenes del catálogo → 📂 Seleccionar imágenes**
+2. Elegir todas las imágenes de productos desde la galería o archivos de la tablet
+3. Las imágenes quedan guardadas dentro de la app (IndexedDB) permanentemente
+4. En la planilla, columna "Imagen URL": solo el nombre del archivo (ej: `smartwatch-negro.jpg`)
+
+> El nombre del archivo debe coincidir exactamente con el valor en la planilla.
+
+### Opción B — GitHub Pages (para uso con internet)
 
 1. Crear una carpeta `imagenes/` en el repositorio
 2. Subir las fotos de productos
@@ -134,13 +146,9 @@ http://localhost:8080/
    https://jfiscman.github.io/Paddle-Watch-Gestion-de-Pedidos/imagenes
    ```
 4. En la planilla, columna "Imagen URL": solo el nombre del archivo
-   ```
-   smartwatch-negro.jpg
-   ```
 
-### Opción B — Servidor local (para uso offline en PC/Mac)
+### Opción C — Servidor local (para uso offline en PC/Mac)
 
-Estructura de carpetas:
 ```
 Paddle-Watch-Gestion-de-Pedidos/
   index.html
@@ -158,6 +166,18 @@ http://localhost:8080/imagenes
 
 ## Base de Clientes
 
+### Condición de pago
+
+Cada cliente puede tener asignada una condición de pago que aparece automáticamente en todos los presupuestos generados:
+
+| Código | Descripción |
+|--------|-------------|
+| `x50`  | Sin IVA / Exento |
+| `x000` | IVA 10.5% |
+| `100`  | IVA 21% |
+
+Se asigna desde la ficha del cliente o al importar el CSV.
+
 ### Importar desde CSV
 
 El archivo CSV puede exportarse desde Excel, Google Sheets o cualquier sistema de gestión. Las columnas son detectadas automáticamente.
@@ -166,14 +186,33 @@ El archivo CSV puede exportarse desde Excel, Google Sheets o cualquier sistema d
 
 | Dato | Nombres de columna aceptados |
 |------|------------------------------|
+| N° de cliente | N° de cliente, nro cliente, num cliente, clientnum |
 | Nombre | Nombre, name, cliente, empresa, razón social |
 | Teléfono | Teléfono, tel, phone, celular, móvil |
 | Email | Email, mail, correo |
 | CUIT | CUIT, DNI, RUC, documento |
+| **Condición de pago** | Condición de pago, condicion de pago, cond pago, payment, iva |
 | Dirección | Dirección, address, domicilio, dir |
 | Notas | Notas, notes, observaciones, comentarios |
 
 Para ver el formato exacto: **👥 Clientes → 📄 Plantilla**
+
+---
+
+## Historial de Presupuestos
+
+Los presupuestos generados se pueden guardar para consultarlos o reenviarlos después:
+
+1. Armar el presupuesto y completar los datos del cliente
+2. Tocar **💾 Guardar presupuesto** en el panel lateral
+3. Para ver los guardados: **📋 Historial** (en el panel lateral)
+
+Desde el historial se puede:
+- **📄 PDF** · **📱 WhatsApp** · **📧 Email** — reenviar sin reabrir
+- **↩ Reabrir** — carga el presupuesto como activo para modificarlo
+- **🗑 Eliminar** — borrarlo del historial
+
+> Los presupuestos del historial incluyen un snapshot de los datos del cliente al momento de guardarlos, por lo que si el cliente cambia sus datos después, los presupuestos anteriores conservan la información original.
 
 ---
 
@@ -198,10 +237,10 @@ Para ver el formato exacto: **👥 Clientes → 📄 Plantilla**
 
 ## Datos y Privacidad
 
-Todos los datos (productos, clientes, presupuestos) se guardan **localmente en el dispositivo** usando `localStorage` del navegador. No se envía ningún dato a servidores externos salvo:
+Todos los datos (productos, clientes, presupuestos, imágenes) se guardan **localmente en el dispositivo** usando `localStorage` e `IndexedDB` del navegador. No se envía ningún dato a servidores externos salvo:
 
 - La sincronización con Google Sheets (lectura de la planilla configurada)
-- La carga de imágenes desde GitHub Pages
+- La carga de imágenes desde GitHub Pages (si se usa esa opción)
 
 ---
 
@@ -209,7 +248,7 @@ Todos los datos (productos, clientes, presupuestos) se guardan **localmente en e
 
 | Dispositivo | Estado |
 |-------------|--------|
-| Android (Chrome) | ✅ Instalable como app, offline completo |
+| Android (Chrome) | ✅ Instalable como app, offline completo, carga de imágenes desde dispositivo |
 | iPhone / iPad (Safari) | ✅ Agregar a pantalla de inicio |
 | Windows (Chrome/Edge) | ✅ Instalable como app |
 | macOS (Chrome/Safari) | ✅ Instalable como app |
