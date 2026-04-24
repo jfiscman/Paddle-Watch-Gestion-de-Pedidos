@@ -637,37 +637,36 @@
         <div id="syncStatus" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
       </div>
       <div class="settings-box">
-        <h4>🖼 Imágenes locales</h4>
-        <div class="form-group">
-          <label>URL base de imágenes</label>
-          <input type="text" id="sImageBase" placeholder="http://localhost:8080/imagenes/">
-        </div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:10px">
-          Si tus imágenes están en el mismo dispositivo, usá un servidor local.<br>
-          En la planilla de Sheets ponés solo el <strong>nombre del archivo</strong> (ej: <code>reloj-negro.jpg</code>)
-          y el catálogo agrega esta URL base automáticamente.
+        <h4>🖼 Imágenes del catálogo</h4>
+
+        <!-- Tablet / offline: load from device -->
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          Cargá las imágenes directamente desde la tablet. Quedan guardadas en la app y funcionan sin conexión.
+          El nombre de cada archivo debe coincidir con la columna <code>imagen</code> de la planilla (ej: <code>reloj-negro.jpg</code>).
         </p>
-        <div style="background:#14231A;border-radius:8px;padding:12px;margin-bottom:8px">
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Servidor local — ejecutá este comando en la carpeta del catálogo</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <code id="serverCmd" style="flex:1;color:#6EE7B7;font-size:12px;font-family:monospace">python3 -m http.server 8080</code>
-            <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);flex-shrink:0" onclick="copyServerCmd()">Copiar</button>
-          </div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px">
-            Luego abrí: <code style="color:#86efac">http://localhost:8080/paddlewatch-catalogo.html</code>
-          </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <label class="btn btn-primary btn-sm" id="imgImportBtn" style="cursor:pointer">
+            📂 Seleccionar imágenes
+            <input type="file" accept="image/*" multiple style="display:none" onchange="handleImgImport(event)">
+          </label>
+          <button type="button" class="btn btn-danger btn-sm" id="imgClearBtn" onclick="clearAllImages()" style="display:none">🗑 Eliminar todas</button>
+          <span id="imgStoreCount" style="font-size:12px;color:var(--muted)">Sin imágenes guardadas</span>
         </div>
-        <details style="font-size:11px;color:var(--muted)">
-          <summary style="cursor:pointer;font-weight:600;margin-bottom:6px">Ver estructura de carpetas recomendada</summary>
-          <pre style="background:#F3F4F6;padding:10px;border-radius:6px;margin-top:6px;font-size:11px;line-height:1.6">📁 catalogo/
-  📄 paddlewatch-catalogo.html
-  📁 imagenes/
-      🖼 smartwatch-negro.jpg
-      🖼 reloj-clasico.jpg
-      🖼 auriculares-tws.jpg
-      ...</pre>
-          <p style="margin-top:6px">En Google Sheets, columna "Imagen URL": <code>imagenes/smartwatch-negro.jpg</code><br>
-          URL base en Ajustes: <code>http://localhost:8080</code></p>
+
+        <!-- Desktop fallback: local server -->
+        <details style="font-size:11px;color:var(--muted);margin-top:4px">
+          <summary style="cursor:pointer;font-weight:600;margin-bottom:8px">Opción alternativa: servidor local (PC/Mac)</summary>
+          <div class="form-group" style="margin-bottom:8px">
+            <label>URL base de imágenes</label>
+            <input type="text" id="sImageBase" placeholder="http://localhost:8080/imagenes/">
+          </div>
+          <div style="background:#14231A;border-radius:8px;padding:12px;margin-bottom:8px">
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Ejecutá este comando en la carpeta del catálogo</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <code id="serverCmd" style="flex:1;color:#6EE7B7;font-size:12px;font-family:monospace">python3 -m http.server 8080</code>
+              <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);flex-shrink:0" onclick="copyServerCmd()">Copiar</button>
+            </div>
+          </div>
         </details>
       </div>
       <div class="settings-box">
@@ -817,6 +816,100 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
 
+// ─── IMAGE STORE (IndexedDB) ──────────────────────────────────────────────────
+const IMG_STORE = {}; // basename → dataURL, cargado al iniciar
+
+function _openImgDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('pw_images', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('images');
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function loadImagesFromDB() {
+  try {
+    const db = await _openImgDB();
+    const tx = db.transaction('images', 'readonly');
+    const st = tx.objectStore('images');
+    const keys = await new Promise((res,rej) => { const r=st.getAllKeys(); r.onsuccess=()=>res(r.result); r.onerror=rej; });
+    const vals = await new Promise((res,rej) => { const r=st.getAll();    r.onsuccess=()=>res(r.result); r.onerror=rej; });
+    keys.forEach((k,i) => { IMG_STORE[k] = vals[i]; });
+    db.close();
+  } catch(e) { console.warn('IMG DB load:', e); }
+}
+
+async function importImagesFromFiles(files) {
+  if (!files.length) return 0;
+  const db = await _openImgDB();
+  const tx = db.transaction('images', 'readwrite');
+  const st = tx.objectStore('images');
+  await Promise.all(Array.from(files).map(file => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const dataURL = e.target.result;
+      IMG_STORE[file.name] = dataURL;
+      const r = st.put(dataURL, file.name);
+      r.onsuccess = res;
+      r.onerror   = rej;
+    };
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  })));
+  db.close();
+  return files.length;
+}
+
+async function deleteAllImagesFromDB() {
+  const db = await _openImgDB();
+  const tx = db.transaction('images', 'readwrite');
+  tx.objectStore('images').clear();
+  await new Promise((res,rej) => { tx.oncomplete=res; tx.onerror=rej; });
+  db.close();
+  Object.keys(IMG_STORE).forEach(k => delete IMG_STORE[k]);
+}
+
+function imgStoreCount() { return Object.keys(IMG_STORE).length; }
+
+async function handleImgImport(ev) {
+  const files = ev.target.files;
+  if (!files.length) return;
+  const btn = document.getElementById('imgImportBtn');
+  btn.textContent = `Cargando ${files.length} imágenes…`;
+  btn.disabled = true;
+  try {
+    await importImagesFromFiles(files);
+    updateImgCountUI();
+    applyFilters();
+    toast(`${files.length} imagen${files.length!==1?'es':''} guardada${files.length!==1?'s':''} ✓`);
+  } catch(e) {
+    toast('Error al guardar imágenes');
+    console.error(e);
+  } finally {
+    btn.textContent = '📂 Seleccionar imágenes';
+    btn.disabled = false;
+    ev.target.value = '';
+  }
+}
+
+async function clearAllImages() {
+  if (!confirm(`¿Eliminar las ${imgStoreCount()} imágenes guardadas?`)) return;
+  await deleteAllImagesFromDB();
+  updateImgCountUI();
+  applyFilters();
+  toast('Imágenes eliminadas');
+}
+
+function updateImgCountUI() {
+  const el = document.getElementById('imgStoreCount');
+  if (!el) return;
+  const n = imgStoreCount();
+  el.textContent = n ? `${n} imagen${n!==1?'es':''} guardada${n!==1?'s':''}` : 'Sin imágenes guardadas';
+  const delBtn = document.getElementById('imgClearBtn');
+  if (delBtn) delBtn.style.display = n ? 'inline-flex' : 'none';
+}
+
 // ─── BUDGET NUMBERING ─────────────────────────────────────────────────────────
 function nextBudgetNum() {
   const n = (store.get('pw_budget_counter', 0) || 0) + 1;
@@ -830,7 +923,9 @@ function updateBudgetNumBadge() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
+async function init() {
+  await loadImagesFromDB();
+
   S.products  = store.get('pw_products',  DEMO);
   S.customers = store.get('pw_customers', []);
   S.cfg       = store.get('pw_cfg',       S.cfg);
@@ -852,6 +947,7 @@ function init() {
 
   applyFilters();
   renderBudget();
+  updateImgCountUI();
   checkOffline();
   window.addEventListener('online',  checkOffline);
   window.addEventListener('offline', checkOffline);
@@ -862,9 +958,11 @@ function checkOffline() {
 }
 
 // ─── FILTER & RENDER ─────────────────────────────────────────────────────────
-// Resolve image URL: prepend base URL if the path is relative
+// Resolve image URL: local IndexedDB store first, then base URL, then absolute
 function resolveImg(url) {
   if (!url) return '';
+  const basename = url.split('/').pop();
+  if (IMG_STORE[basename]) return IMG_STORE[basename];
   if (/^(https?:|data:)/.test(url)) return url;
   const base = (S.cfg.imageBaseUrl || '').replace(/\/$/, '');
   return base ? `${base}/${url}` : url;
