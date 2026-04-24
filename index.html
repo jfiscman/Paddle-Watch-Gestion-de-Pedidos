@@ -391,7 +391,6 @@
   <div class="header-actions">
     <span id="offlinePill" class="offline-pill" style="display:none">SIN CONEXIÓN</span>
     <button class="btn btn-ghost btn-sm" onclick="openSettings()">⚙ Ajustes</button>
-    <button class="btn btn-ghost btn-sm" onclick="syncProducts()">↻ Sincronizar</button>
     <button class="btn btn-ghost btn-sm" onclick="openCustomerModal()">👥 Clientes</button>
     <button class="btn btn-accent btn-sm" onclick="openNewProduct()">+ Producto</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleBudget()" id="budgetToggleBtn">
@@ -625,18 +624,17 @@
         </div>
       </div>
       <div class="settings-box">
-        <h4>📊 Sincronización con Google Sheets</h4>
-        <div class="form-group">
-          <label>URL de la planilla de Google Sheets</label>
-          <input type="url" id="sSheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/...">
-        </div>
+        <h4>📦 Catálogo de Productos</h4>
         <p style="font-size:11px;color:var(--muted);margin-bottom:10px">
-          La planilla debe estar compartida con "Cualquiera con el link puede ver".<br>
-          Pegá cualquier URL del Sheet (edit, share o pub) — el catálogo detecta el ID automáticamente.
+          Descargá la plantilla, completala en Excel o Google Sheets, y volvé a importarla.<br>
+          La importación <strong>reemplaza</strong> el catálogo completo.
         </p>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <button type="button" class="btn btn-light btn-sm" onclick="downloadTemplate()">⬇ Descargar plantilla CSV</button>
-          <button type="button" class="btn btn-success btn-sm" onclick="syncProducts()">↻ Sincronizar ahora</button>
+          <button type="button" class="btn btn-light btn-sm" onclick="downloadTemplate()">⬇ Plantilla CSV</button>
+          <label class="btn btn-primary btn-sm" style="cursor:pointer">
+            ⬆ Importar CSV
+            <input type="file" accept=".csv,.txt" style="display:none" onchange="importProductsCSV(event)">
+          </label>
         </div>
         <div id="syncStatus" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
       </div>
@@ -727,6 +725,7 @@
         </label>
         <button class="btn btn-light btn-sm" onclick="exportCustomersCSV()">⬇ Exportar CSV</button>
         <button class="btn btn-light btn-sm" onclick="downloadCustomerTemplate()">📄 Plantilla</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllCustomers()">🗑 Borrar todos</button>
         <span id="custCount" style="margin-left:auto;font-size:12px;color:var(--muted);align-self:center"></span>
       </div>
 
@@ -825,7 +824,7 @@ const S = {
   filters: { search:'', category:'', sub:'', minPrice:0, maxPrice:Infinity, sort:'default' },
   budget: { items:[], customerId:null, customer:'', notes:'', discount:0, num:0 },
   budgetHistory: [],
-  cfg: { name:'PaddleWatch', phone:'', email:'', sheetsUrl:'', imageBaseUrl:'' }
+  cfg: { name:'PaddleWatch', phone:'', email:'', imageBaseUrl:'' }
 };
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
@@ -1643,50 +1642,29 @@ function rowToProduct(row) {
   };
 }
 
-async function syncProducts() {
-  const url = S.cfg.sheetsUrl || '';
-  if (!url) {
-    toast('Pegá la URL de tu Google Sheet en ⚙ Ajustes');
-    openSettings();
-    return;
-  }
-
-  const sheetId = extractSheetId(url);
-  if (!sheetId) {
-    toast('URL de Google Sheets inválida — verificá el link');
-    return;
-  }
-
+function importProductsCSV(ev) {
+  const f = ev.target.files[0]; if (!f) return;
   const statusEl = document.getElementById('syncStatus');
-  const csvUrl = buildCsvUrl(sheetId);
-  toast('Conectando con Google Sheets…');
-  if (statusEl) statusEl.textContent = '⏳ Sincronizando…';
-
-  try {
-    const res = await fetch(csvUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status} — verificá que la planilla sea pública`);
-    const text = await res.text();
-    const rows = parseCSV(text);
-    const mapped = rows.map(rowToProduct).filter(Boolean);
-
-    if (mapped.length === 0) {
-      throw new Error('No se encontraron productos. Verificá que la planilla tenga encabezados válidos.');
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const rows = parseCSV(e.target.result);
+      const mapped = rows.map(rowToProduct).filter(Boolean);
+      if (!mapped.length) throw new Error('No se encontraron productos. Verificá que el archivo tenga los encabezados correctos.');
+      if (!confirm(`¿Importar ${mapped.length} productos?\nEsto REEMPLAZARÁ el catálogo completo.`)) return;
+      S.products = mapped;
+      store.set('pw_products', S.products);
+      applyFilters();
+      const ts = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+      if (statusEl) statusEl.textContent = `✓ ${mapped.length} productos importados a las ${ts}`;
+      toast(`✓ ${mapped.length} productos importados`);
+    } catch(err) {
+      if (statusEl) statusEl.textContent = `✗ ${err.message}`;
+      toast('Error: ' + err.message);
     }
-
-    // Merge: keep products created locally (not from sheets), update/add sheets products
-    const localOnly = S.products.filter(p => !p.id.startsWith('gs_'));
-    S.products = [...localOnly, ...mapped];
-    store.set('pw_products', S.products);
-    store.set('pw_lastSync', new Date().toISOString());
-    applyFilters();
-
-    const ts = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-    if (statusEl) statusEl.textContent = `✓ ${mapped.length} productos sincronizados a las ${ts}`;
-    toast(`✓ ${mapped.length} productos importados desde Google Sheets`);
-  } catch(err) {
-    if (statusEl) statusEl.textContent = `✗ Error: ${err.message}`;
-    toast(`Error: ${err.message}`);
-  }
+    ev.target.value = '';
+  };
+  r.readAsText(f, 'utf-8');
 }
 
 // Generate and download a CSV template for Google Sheets
@@ -1726,27 +1704,25 @@ function stripTags(html) {
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 function openSettings() {
-  document.getElementById('sName').value    = S.cfg.name||'';
-  document.getElementById('sPhone').value   = S.cfg.phone||'';
-  document.getElementById('sEmail').value   = S.cfg.email||'';
-  document.getElementById('sSheetsUrl').value  = S.cfg.sheetsUrl||'';
-  document.getElementById('sImageBase').value  = S.cfg.imageBaseUrl||'';
-  // Show last sync time if available
-  const lastSync = store.get('pw_lastSync');
+  document.getElementById('sName').value   = S.cfg.name||'';
+  document.getElementById('sPhone').value  = S.cfg.phone||'';
+  document.getElementById('sEmail').value  = S.cfg.email||'';
+  document.getElementById('sImageBase').value = S.cfg.imageBaseUrl||'';
+  const lastImport = store.get('pw_lastImport');
   const statusEl = document.getElementById('syncStatus');
-  if (statusEl && lastSync) {
-    const ts = new Date(lastSync).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    statusEl.textContent = `Última sincronización: ${ts}`;
+  if (statusEl && lastImport) {
+    const ts = new Date(lastImport).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    statusEl.textContent = `Última importación: ${ts}`;
   }
+  updateImgCountUI();
   openModal('settingsModal');
 }
 
 function saveSettings() {
   S.cfg = {
-    name:      document.getElementById('sName').value,
-    phone:     document.getElementById('sPhone').value,
-    email:     document.getElementById('sEmail').value,
-    sheetsUrl:    document.getElementById('sSheetsUrl').value.trim(),
+    name:         document.getElementById('sName').value,
+    phone:        document.getElementById('sPhone').value,
+    email:        document.getElementById('sEmail').value,
     imageBaseUrl: document.getElementById('sImageBase').value.trim().replace(/\/$/, ''),
   };
   store.set('pw_cfg', S.cfg);
@@ -1789,6 +1765,16 @@ function resetAllData() {
 // ─── CUSTOMERS ───────────────────────────────────────────────────────────────────
 
 function saveCustomersStore() { store.set('pw_customers', S.customers); }
+
+function clearAllCustomers() {
+  if (!S.customers.length) { toast('No hay clientes para eliminar'); return; }
+  if (!confirm(`¿Eliminar los ${S.customers.length} clientes de la base?\nEsta acción no se puede deshacer.`)) return;
+  S.customers = [];
+  saveCustomersStore();
+  if (S.budget.customerId) clearCustomer(true);
+  renderCustomerList('');
+  toast('Base de clientes eliminada');
+}
 
 // ── Selector in budget panel ──────────────────────────────────────────────────
 function onCustSearch(q) {
@@ -2019,11 +2005,15 @@ function importCustomersCSV(ev) {
         };
       }).filter(Boolean);
       if (!imported.length) throw new Error('No se encontró la columna "Razón Social"');
-      if (!confirm(`¿Importar ${imported.length} clientes? Se agregarán a los existentes.`)) return;
-      S.customers = [...S.customers, ...imported];
+      const replace = confirm(
+        `Se encontraron ${imported.length} cliente${imported.length!==1?'s':''}.\n\n` +
+        `¿REEMPLAZAR la base completa con estos ${imported.length} cliente${imported.length!==1?'s':''}?\n\n` +
+        `Aceptar = Reemplazar todo\nCancelar = Agregar a los existentes`
+      );
+      S.customers = replace ? imported : [...S.customers, ...imported];
       saveCustomersStore();
       renderCustomerList('');
-      toast(`${imported.length} clientes importados ✓`);
+      toast(`${imported.length} clientes ${replace?'importados (reemplazó la base)':'agregados'} ✓`);
     } catch(err) { toast('Error al importar: '+err.message); }
     ev.target.value = '';
   };
