@@ -1335,8 +1335,8 @@ function histReopen(id) {
   const b = _histFind(id);
   if (!b) return;
   if (S.budget.items.length && !confirm(`¿Reemplazar el presupuesto activo con el ${fmtBudgetNum(b.num)}?`)) return;
+  clearCustomer(true); // reset UI antes de reasignar S.budget
   S.budget = { items: JSON.parse(JSON.stringify(b.items)), customerId: b.customerId, customer: b.customer, notes: b.notes, discount: b.discount, num: b.num };
-  clearCustomer(true);
   document.getElementById('budgetNotes').value = b.notes || '';
   updateBudgetNumBadge();
   if (b.customerId) {
