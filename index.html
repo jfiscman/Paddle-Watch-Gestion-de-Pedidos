@@ -797,6 +797,10 @@ const DEMO = [
   { id:'d1', sku:'50001', name:'Despertador Digital LED', category:'despertador', sub:'', price:38000, origPrice:null, stock:15, image:'', desc:'Pantalla LED, temperatura, fecha, alarma dual, función snooze.', tags:['digital','led','temperatura','alarma'] },
 ];
 
+// ─── PAYMENT CONDITIONS ───────────────────────────────────────────────────────
+const PAY_LABEL = { '100':'IVA 21%', 'x000':'IVA 10.5%', 'x50':'Sin IVA / Exento' };
+function payLabel(code) { return code ? `${code} — ${PAY_LABEL[code]||code}` : ''; }
+
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const S = {
   products: [],
@@ -1163,7 +1167,7 @@ function budgetText() {
     if (c.phone)   t += `📱 ${c.phone}\n`;
     if (c.email)   t += `📧 ${c.email}\n`;
     if (c.cuit)    t += `🪪 CUIT: ${c.cuit}\n`;
-    if (c.payment) t += `🧾 Cond. pago: ${c.payment}\n`;
+    if (c.payment) t += `🧾 Cond. pago: ${payLabel(c.payment)}\n`;
     if (c.address) t += `📍 ${c.address}\n`;
   } else if (customer) {
     t += `👤 Cliente: ${customer}\n`;
@@ -1191,7 +1195,7 @@ function budgetHTML() {
       ${c.clientNum ? `<tr><td style="color:#888;width:80px">N° Cliente:</td><td><b>${c.clientNum}</b></td></tr>` : ''}
       <tr><td style="color:#888;width:80px">Cliente:</td><td><b>${c.name}</b></td></tr>
       ${c.cuit    ? `<tr><td style="color:#888">CUIT:</td><td>${c.cuit}</td></tr>` : ''}
-      ${c.payment ? `<tr><td style="color:#888">Cond. pago:</td><td>${c.payment}</td></tr>` : ''}
+      ${c.payment ? `<tr><td style="color:#888">Cond. pago:</td><td>${payLabel(c.payment)}</td></tr>` : ''}
       ${c.phone   ? `<tr><td style="color:#888">Tel:</td><td>${c.phone}</td></tr>` : ''}
       ${c.email   ? `<tr><td style="color:#888">Email:</td><td>${c.email}</td></tr>` : ''}
       ${c.address ? `<tr><td style="color:#888">Dir:</td><td>${c.address}</td></tr>` : ''}
@@ -1614,12 +1618,11 @@ function showCustomerCard(c) {
   document.getElementById('custCard').style.display = 'block';
   document.getElementById('custSearchWrap').style.display = 'none';
   document.getElementById('custCardName').textContent = (c.clientNum ? `[${c.clientNum}] ` : '') + c.name;
-  const PAY_LABEL = { '100':'IVA 21%', 'x000':'IVA 10.5%', 'x50':'Sin IVA' };
   const meta = [
     c.phone   ? '📱 '+c.phone   : '',
     c.email   ? '📧 '+c.email   : '',
     c.cuit    ? '🪪 '+c.cuit    : '',
-    c.payment ? '🧾 Cond. '+c.payment+' ('+( PAY_LABEL[c.payment]||c.payment)+')' : '',
+    c.payment ? '🧾 Cond. '+payLabel(c.payment) : '',
     c.address ? '📍 '+c.address : '',
     c.notes   ? '📝 '+c.notes   : '',
   ].filter(Boolean).join('<br>');
@@ -1673,8 +1676,7 @@ function renderCustomerList(q) {
   }
   list.innerHTML = filtered.map(c => {
     const initials = c.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-    const PAY_LABEL = { '100':'IVA 21%', 'x000':'IVA 10.5%', 'x50':'Sin IVA' };
-    const meta = [c.phone, c.email, c.cuit, c.payment ? 'Cond. '+c.payment : ''].filter(Boolean).join(' · ') || 'Sin datos de contacto';
+    const meta = [c.phone, c.email, c.cuit, c.payment ? 'Cond. '+payLabel(c.payment) : ''].filter(Boolean).join(' · ') || 'Sin datos de contacto';
     return `<div class="cust-row" onclick="openEditCustomer('${c.id}')">
       <div class="cust-row-avatar">${initials}</div>
       <div class="cust-row-info">
