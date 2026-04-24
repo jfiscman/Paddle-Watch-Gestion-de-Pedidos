@@ -1267,6 +1267,7 @@ function budgetText() {
     if (c.cuit)    t += `🪪 CUIT: ${c.cuit}\n`;
     if (c.payment) t += `🧾 Cond. pago: ${payLabel(c.payment)}\n`;
     if (c.address) t += `📍 ${c.address}\n`;
+    if (c.notes)   t += `📋 Obs: ${c.notes}\n`;
   } else if (customer) {
     t += `👤 Cliente: ${customer}\n`;
   }
@@ -1297,6 +1298,7 @@ function budgetHTML() {
       ${c.phone   ? `<tr><td style="color:#888">Tel:</td><td>${c.phone}</td></tr>` : ''}
       ${c.email   ? `<tr><td style="color:#888">Email:</td><td>${c.email}</td></tr>` : ''}
       ${c.address ? `<tr><td style="color:#888">Dir:</td><td>${c.address}</td></tr>` : ''}
+      ${c.notes   ? `<tr><td style="color:#888;vertical-align:top">Obs:</td><td style="font-style:italic">${c.notes}</td></tr>` : ''}
     </table>` : (customer ? `<p style="font-size:13px;margin-bottom:16px"><b>Cliente:</b> ${customer}</p>` : '');
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Presupuesto ${fmtBudgetNum(S.budget.num)} — ${S.cfg.name}</title>
