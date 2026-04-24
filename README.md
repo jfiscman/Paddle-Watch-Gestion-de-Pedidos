@@ -1,4 +1,4 @@
-# PaddleWatch · Catálogo Interactivo de Vendedores
+# Paddle Watch · Catálogo Interactivo de Vendedores
 
 Catálogo digital offline-first para el equipo de ventas de PaddleWatch. Funciona como aplicación instalable en tablets y computadoras (PWA), sin necesidad de conexión a internet una vez instalado.
 
