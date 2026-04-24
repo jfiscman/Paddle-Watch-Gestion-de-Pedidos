@@ -1627,10 +1627,10 @@ function mapCategory(raw) {
 // Map a raw gender/sub string to internal key
 function mapSub(raw) {
   const t = (raw||'').toLowerCase().trim();
-  if (t.includes('mujer') || t.includes('dama'))      return 'mujer';
-  if (t.includes('hombre') || t.includes('caball'))   return 'hombre';
-  if (t.includes('ni') || t.includes('infant'))       return 'nino';
-  if (t.includes('unisex'))                            return 'unisex';
+  if (t.includes('mujer') || t.includes('dama'))                      return 'mujer';
+  if (t.includes('hombre') || t.includes('caball'))                   return 'hombre';
+  if (t.includes('unisex'))                                            return 'unisex';
+  if (t.includes('niño') || t.includes('nino') || t.includes('infant')) return 'nino';
   return '';
 }
 
@@ -1671,13 +1671,29 @@ function importProductsCSV(ev) {
       const rows = parseCSV(e.target.result);
       const mapped = rows.map(rowToProduct).filter(Boolean);
       if (!mapped.length) throw new Error('No se encontraron productos. Verificá que el archivo tenga los encabezados correctos.');
-      if (!confirm(`¿Importar ${mapped.length} productos?\nEsto REEMPLAZARÁ el catálogo completo.`)) return;
-      S.products = mapped;
+      const merge = confirm(
+        `Se encontraron ${mapped.length} producto${mapped.length!==1?'s':''}.\n\n` +
+        `Aceptar = Actualizar por SKU (sobreescribe existentes, agrega nuevos, mantiene los que no están en el archivo)\n` +
+        `Cancelar = Reemplazar TODO el catálogo`
+      );
+      if (merge) {
+        const result = [...S.products];
+        let updated = 0, added = 0;
+        mapped.forEach(p => {
+          const idx = result.findIndex(x => x.sku === p.sku && p.sku !== '—');
+          if (idx >= 0) { result[idx] = { ...p, id: result[idx].id }; updated++; }
+          else          { result.push(p); added++; }
+        });
+        S.products = result;
+        toast(`✓ ${updated} actualizados, ${added} agregados`);
+      } else {
+        S.products = mapped;
+        toast(`✓ ${mapped.length} productos importados (catálogo reemplazado)`);
+      }
       store.set('pw_products', S.products);
       applyFilters();
       const ts = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-      if (statusEl) statusEl.textContent = `✓ ${mapped.length} productos importados a las ${ts}`;
-      toast(`✓ ${mapped.length} productos importados`);
+      if (statusEl) statusEl.textContent = `✓ Catálogo actualizado a las ${ts}`;
     } catch(err) {
       if (statusEl) statusEl.textContent = `✗ ${err.message}`;
       toast('Error: ' + err.message);
