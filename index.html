@@ -996,7 +996,10 @@ function resolveImg(url) {
   if (IMG_STORE[basename]) return IMG_STORE[basename];
   if (/^(https?:|data:)/.test(url)) return url;
   const base = (S.cfg.imageBaseUrl || '').replace(/\/$/, '');
-  return base ? `${base}/${url}` : url;
+  if (base) return `${base}/${basename}`;
+  // Sin URL base configurada: buscar en imagenes/ relativo a la app
+  // Funciona en GitHub Pages y servidor local sin configuración manual
+  return `imagenes/${basename}`;
 }
 
 const CAT_EMOJI = { smartwatch:'⌚', clasico:'🕰', alta_gama:'💎', auriculares:'🎧', deportivo:'🏃', despertador:'⏰', promo_2x1:'🔥', otros:'📂' };
@@ -1055,7 +1058,7 @@ function cardHTML(p) {
   const disc = p.origPrice ? Math.round((1-p.price/p.origPrice)*100) : 0;
   const [sCls, sTxt] = stockInfo(p);
   const imgEl = resolveImg(p.image)
-    ? `<img src="${resolveImg(p.image)}" onerror="this.style.display='none';this.nextSibling.style.display='block'" alt="">`
+    ? `<img src="${resolveImg(p.image)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" alt="">`
     : '';
   return `
   <div class="product-card" onclick="openDetail('${p.id}')">

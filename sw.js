@@ -1,6 +1,6 @@
 // PaddleWatch Catálogo — Service Worker
 // Bump CACHE_NAME when deploying updates to force refresh on all devices
-const CACHE_NAME = 'pw-catalogo-v1';
+const CACHE_NAME = 'pw-catalogo-v2';
 
 const APP_SHELL = [
   './',
